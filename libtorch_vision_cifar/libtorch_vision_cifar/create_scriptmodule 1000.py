@@ -40,32 +40,36 @@ def create_module(model_name: str, num_classes: int, batch_size: int, ndim: int,
     print(f"Successfully created scriptmodule file {filename}.")
 
 if __name__ == "__main__":
+    # https://github.com/pytorch/vision/blob/main/hubconf.py
+    
     model_names = [
                     # "alexnet",
                     # "vgg19",
-                    # "resnet18",
-                    # "inceptionv3",
-                    # "mobilenet_small",
-                    # "mobilenet_large",
-                    # "resnext50",
-                    "wide_resnet50_2",
+                    "resnet18",
+                    # "inception_v3",
+                    # "mobilenet_v2",
+                    # "mobilenet_v3_small",
+                    # "mobilenet_v3_large",
+                    # "resnext50_32x4d",
+                    # "wide_resnet50_2",
                     # "efficientnet"
                    ]    
 
-    num_classes = 10
     batch_size = 64
     ndim = 3
-    image_size = 28
+    image_size = 224
     
     for model_name in model_names:
     
         model = torch.hub.load('pytorch/vision:v0.9.0', model_name, pretrained=True)
         
+        print(model)
+        
         example = torch.rand(batch_size, ndim, image_size, image_size)
 
         traced_script_module = torch.jit.trace(model, example)
         
-        filename = f"pretrained_models/{model_name}_mnist.pt"
+        filename = f"pretrained_models/{model_name}.pt"
         traced_script_module.save(filename)
         print(f"Successfully created scriptmodule file {filename}.")
         

@@ -107,6 +107,12 @@ int main(void)
 	int num_classes = 10;
 	auto net = vision::models::ResNet18(num_classes);
 
+	vision::models::ResNet18 resnet18 = vision::models::ResNet18(num_classes);
+	vision::models::ResNet50 resnet50 = vision::models::ResNet50(num_classes);
+	vision::models::ResNet101 resnet101 = vision::models::ResNet101(num_classes);
+	vision::models::WideResNet50_2 wresnet50_2 = vision::models::WideResNet50_2(num_classes);
+	vision::models::ResNext101_32x8d resnext101_32d8 = vision::models::ResNext101_32x8d(num_classes);
+
 	int64_t kTrainBatchSize = 64;
 	int64_t kTestBatchSize(kTrainBatchSize);
 

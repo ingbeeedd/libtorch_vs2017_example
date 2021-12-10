@@ -10,6 +10,7 @@
 #include <torchvision/models/models.h>
 #include <torchvision/models/modelsimpl.h>
 #include "cifar10.h"
+#include "ConfusionMatrix.h"
 
 //auto create_model(const std::string model_type, int64_t num_classes)
 void create_model(const std::string model_type, int64_t num_classes, torch::nn::AnyModule &model)
@@ -124,7 +125,8 @@ void create_model(const std::string model_type, int64_t num_classes, torch::nn::
 template <typename DataLoader>
 void test(torch::nn::AnyModule &net,
 	DataLoader& test_loader,
-	torch::Device device)
+	torch::Device device,
+	ConfusionMatrix &cm)
 {
 	net.ptr()->to(device);
 	net.ptr()->eval();
@@ -152,6 +154,12 @@ void test(torch::nn::AnyModule &net,
 		auto prediction = output.argmax(1);
 
 		num_correct += prediction.eq(target).sum().item<int64_t>();
+
+		// 
+		for (int i = 0; i < data.size(0); i++) {
+			//std::cout << target[i].item<int64_t>() << " " << prediction[i].item<int64_t>() << std::endl;
+			cm.accumulate(target[i].item<int64_t>(), prediction[i].item<int64_t>());
+		}
 	}
 
 	auto sample_mean_loss = running_loss / num_samples;
@@ -172,7 +180,7 @@ void train(torch::nn::AnyModule& net,
 
 	std::cout << "Training ... " << std::endl;
 
-	for (size_t epoch = 0; epoch <= num_epochs; ++epoch)
+	for (size_t epoch = 0; epoch < num_epochs; ++epoch)
 	{
 		size_t num_samples = 0;
 		size_t num_correct = 0;
@@ -206,7 +214,7 @@ void train(torch::nn::AnyModule& net,
 		auto sample_mean_loss = running_loss / num_samples;
 		auto accuracy = static_cast<double>(num_correct) / num_samples;
 
-		std::cout << "Epoch [" << epoch << "/" << num_epochs << "], Trainset - Loss: "
+		std::cout << "Epoch [" << (epoch + 1) << "/" << num_epochs << "], Trainset - Loss: "
 			<< sample_mean_loss << ", Accuracy: " << accuracy << std::endl;
 	}
 }
@@ -217,25 +225,13 @@ int main(void)
 	torch::Device device(cuda_available ? torch::kCUDA : torch::kCPU);
 	std::cout << (cuda_available ? "CUDA available. Training on GPU." : "Training on CPU.") << std::endl;
 
-	int num_classes = 10;
+	const int num_classes = 10;
 	//auto net = vision::models::ResNet18(num_classes);
 
 	//auto net = create_model("pretrained_models/resnet18.pt", 10);
 	torch::nn::AnyModule net;
-	create_model("pretrained_models/resnet18.pt", 10, net);
+	create_model("pretrained_models/resnet18.pt", num_classes, net);
 	
-/*	
-	if (dynamic_cast<vision::models::ResNet18*>(*&net))
-	{
-		std::cout << "error";
-	}
-	if (dynamic_cast<vision::models::AlexNet*>(&net))
-	{
-		auto alexNet = static_cast<vision::models::AlexNet*>(&net);
-		std::cout << "alexNet";
-	}
-	*/
-
 	//vision::models::ResNet18 resnet18 = vision::models::ResNet18(num_classes);
 	//vision::models::ResNet50 resnet50 = vision::models::ResNet50(num_classes);
 	//vision::models::ResNet101 resnet101 = vision::models::ResNet101(num_classes);
@@ -267,16 +263,21 @@ int main(void)
 	auto test_loader = torch::data::make_data_loader<torch::data::samplers::SequentialSampler>(std::move(test_dataset),
 																								kTestBatchSize);
 
-	
-	/*std::cout << "typeid train_loader : " << typeid(train_loader).name() << \
-			", typeid test_loader : " << typeid(test_loader).name() << std::endl;*/
-
 	float lr = 0.1;
 	torch::optim::SGD optimizer(net.ptr()->parameters(), lr);
 	
-	int64_t num_epochs = 20;
+	ConfusionMatrix /*traincm(num_classes),*/ testcm(num_classes);
+
+	int64_t num_epochs = 1;
 	train(net, num_epochs, train_loader, optimizer, device);
-	test(net, test_loader, device);
+	test(net, test_loader, device, testcm);
+
+	std::cout << "accuracy: " << testcm.accuracy() << std::endl;
+	std::cout << "average precision: " << testcm.avgPrecision() << std::endl;
+	std::cout << "average recall: " << testcm.avgRecall() << std::endl;
+	
+	testcm.printCounts();
+
 
 	torch::save(net.ptr(), "my_net.pt");
 

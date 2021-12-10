@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cifar10.h" />
+    <ClInclude Include="ConfusionMatrix.h" />
     <ClInclude Include="transform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cifar10.cpp" />
+    <ClCompile Include="ConfusionMatrix.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="transform.cpp" />
   </ItemGroup>
