@@ -5,7 +5,7 @@
 
 *.bin
 *.pt
-libtorch_vision_mnist/
+*ubyte
 
 # User-specific files
 *.rsuser
