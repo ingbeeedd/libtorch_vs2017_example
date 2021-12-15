@@ -6,6 +6,8 @@
 *.bin
 *.pt
 *ubyte
+*.png
+*.gz
 
 # User-specific files
 *.rsuser
