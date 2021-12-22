@@ -1,8 +1,7 @@
 import torch
 
-
 if __name__ == "__main__":
-    model = torch.hub.load('pytorch/vision:v0.9.0', 'wide_resnet50_2', pretrained=True)
+    model = torch.hub.load('pytorch/vision:v0.11.0', 'efficientnet_b0', pretrained=True)
     
-    
-    print(model )
+    # print(torch.hub.list('pytorch/vision:v0.11.0') )
+    print(model)
