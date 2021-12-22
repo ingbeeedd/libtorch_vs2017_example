@@ -10,12 +10,12 @@
 #include "EfficientNet.h"
 
 template <typename DataLoader>
-void test(std::unique_ptr<vision::models::EfficientNetB0>& net,
+void test(torch::nn::AnyModule& net,
 	DataLoader& test_loader,
 	torch::Device device)
 {
-	net->to(device);
-	net->eval();
+	net.ptr()->to(device);
+	net.ptr()->eval();
 
 	std::cout << "Testing ... " << std::endl;
 
@@ -29,7 +29,7 @@ void test(std::unique_ptr<vision::models::EfficientNetB0>& net,
 
 		num_samples += data.size(0);
 
-		torch::Tensor output = net->forward(data);
+		torch::Tensor output = net.forward(data);
 
 		torch::Tensor loss = torch::nn::functional::cross_entropy(output, target);
 
@@ -49,18 +49,18 @@ void test(std::unique_ptr<vision::models::EfficientNetB0>& net,
 }
 
 template <typename DataLoader>
-void train(std::unique_ptr<vision::models::EfficientNetB0>& net,
+void train(torch::nn::AnyModule& net,
 			int64_t num_epochs,
 			DataLoader& train_loader,
 			torch::optim::Optimizer &optimizer,
 			torch::Device device)
 {
-	net->to(device);
-	net->train();
+	net.ptr()->to(device);
+	net.ptr()->train();
 
 	std::cout << "Training ... " << std::endl;
 
-	for (size_t epoch = 0; epoch <= num_epochs; ++epoch)
+	for (size_t epoch = 0; epoch < num_epochs; ++epoch)
 	{
 		size_t num_samples = 0;
 		size_t num_correct = 0;
@@ -74,7 +74,7 @@ void train(std::unique_ptr<vision::models::EfficientNetB0>& net,
 
 			optimizer.zero_grad();
 
-			torch::Tensor output = net->forward(data);
+			torch::Tensor output = net.forward(data);
 
 			torch::Tensor loss = torch::nn::functional::cross_entropy(output, target);
 
@@ -94,7 +94,7 @@ void train(std::unique_ptr<vision::models::EfficientNetB0>& net,
 		auto sample_mean_loss = running_loss / num_samples;
 		auto accuracy = static_cast<double>(num_correct) / num_samples;
 
-		std::cout << "Epoch [" << epoch << "/" << num_epochs << "], Trainset - Loss: "
+		std::cout << "Epoch [" << epoch + 1 << "/" << num_epochs << "], Trainset - Loss: "
 			<< sample_mean_loss << ", Accuracy: " << accuracy << std::endl;
 	}
 }
@@ -113,7 +113,8 @@ int main(void)
 	vision::models::ResNet101 resnet101 = vision::models::ResNet101(num_classes);
 	vision::models::WideResNet50_2 wresnet50_2 = vision::models::WideResNet50_2(num_classes);
 	vision::models::ResNext101_32x8d resnext101_32d8 = vision::models::ResNext101_32x8d(num_classes);
-	std::unique_ptr<vision::models::EfficientNetB0> net = std::make_unique<vision::models::EfficientNetB0>(num_classes);
+	// std::unique_ptr<vision::models::EfficientNetB0> net = std::make_unique<vision::models::EfficientNetB0>(num_classes);
+	auto net = torch::nn::AnyModule(vision::models::EfficientNetB0(10));
 
 	int64_t kTrainBatchSize = 128;
 	int64_t kTestBatchSize(kTrainBatchSize);
@@ -143,13 +144,13 @@ int main(void)
 			", typeid test_loader : " << typeid(test_loader).name() << std::endl;*/
 
 	float lr = 0.1;
-	torch::optim::SGD optimizer(net->parameters(), lr);
+	torch::optim::SGD optimizer(net.ptr()->parameters(), lr);
 
-	int64_t num_epochs = 100;
+	int64_t num_epochs = 2;
 	train(net, num_epochs, train_loader, optimizer, device);
 	test(net, test_loader, device);
 	// torch::save()
-	// torch::save(net., "my_net.pt");
+	torch::save(net.ptr(), "my_net.pt");
 
 	return 0;
 }
